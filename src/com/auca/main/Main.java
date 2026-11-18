@@ -1,6 +1,8 @@
 package com.auca.main;
 
+import com.auca.abstracts.Person;
 import com.auca.interfaces.Identifiable;
+import com.auca.interfaces.Registrable;
 
 import com.auca.department.Department;
 import com.auca.student.Student;
@@ -45,6 +47,7 @@ public class Main {
     private static final ArrayList<FeePayment>payments= new ArrayList<>();
     private static final ArrayList<LibraryBook>books= new ArrayList<>();
     private static final ArrayList<BookLoan>bookLoans= new ArrayList<>();
+
 
     public static void main(String[] args){
 
@@ -98,19 +101,19 @@ public class Main {
                         registerAdministrator();
                         break;
                     case 5:
-                        System.out.println("Registe course selected");
+                        registerCourse();
                         break;
                     case 6:
-                        System.out.println("Register classroom selected");
+                        registerClassroom();
                         break;
                     case 7:
-                        System.out.println("Enroll student selected");
+                        System.out.println("Enroll student");
                         break;
                     case 8:
-                        System.out.println("Record assessment selected");
+                        recordAssessment();
                         break;
                     case 9:
-                        System.out.println("Record fee payment selected");
+                        recordFeePayment();
                         break;
                     case 10:
                         System.out.println("Register library book selected");
@@ -140,7 +143,8 @@ public class Main {
                         System.out.println("View available books selecetd");
                         break;
                     case 19:
-                        System.out.println("Demonstrate polymorphism selected");
+                        demostratePolymorphism();
+                        demonstrateInterfacePolymorphism();
                         break;
                     case 0:
                         System.out.println("Thank you for using AUCA school managemnet System");
@@ -432,43 +436,52 @@ public class Main {
         }
         return teachers.get(choice - 1);
     }
-    private static void registerCourse(){
 
-        System.out.println("REGISTER COURSE");
 
-        Department department= selectDepartment();
+    private static void registerCourse() {
 
-        if (department == null){
+        System.out.println(" REGISTER COURSE ");
+
+        Department department = selectDepartment();
+
+        if (department == null) {
             return;
         }
-        Teacher teacher= selectTeacher();
 
-        if (teacher == null){
+        Teacher teacher = selectTeacher();
+
+        if (teacher == null) {
             return;
         }
-        String id= readText("Enter course ID:");
 
-        for (Course course: courses){
-            if (course.getId().equalsIgnoreCase(id)){
-                System.out.println("This course ID already exists");
+        String id = readText("Enter course ID: ");
+
+        for (Course course : courses) {
+            if (course.getId().equalsIgnoreCase(id)) {
+                System.out.println("This course ID already exists.");
                 return;
             }
         }
-        String code= readText("Enter course code:");
-        String title= readText("Enter course title:");
-        int creditHours= readInt("Enter credit hours(1-6)");
 
-        Course course= new Course(id,code,title,creditHours,department,teacher);
+        String code = readText("Enter course code: ");
+        String title = readText("Enter course title: ");
+        int creditHours = readInt("Enter credit hours (1-6): ");
+
+        Course course = new Course(
+                id, code, title, creditHours, department, teacher
+        );
 
         try {
             course.validate();
             courses.add(course);
 
-            System.out.println("Course registered successfully");
-            } catch (ValidationException e){
-            System.out.println("Registration failed:" + e.getMessage());
+            System.out.println("Course registered successfully!");
+
+        } catch (ValidationException e) {
+            System.out.println("Registration failed: " + e.getMessage());
         }
     }
+
     private static void registerClassroom(){
         System.out.println("REGISTER CLASSROOM");
 
@@ -537,5 +550,181 @@ public class Main {
 
         return courses.get(choice-1);
     }
-    
+
+
+    private static Enrollment selectEnrollment() {
+
+        if (enrollments.isEmpty()) {
+            System.out.println("No enrollments are available.");
+            return null;
+        }
+
+        System.out.println("\nAvailable Enrollments:");
+
+        for (int i = 0; i < enrollments.size(); i++) {
+            System.out.println((i + 1) + ". " +
+                    enrollments.get(i).getRegistrationSummary());
+        }
+
+        int choice = readInt("Select enrollment number: ");
+
+        if (choice < 1 || choice > enrollments.size()) {
+            System.out.println("Invalid enrollment selection.");
+            return null;
+        }
+
+        return enrollments.get(choice - 1);
+    }
+
+
+    private static void recordAssessment() {
+
+        System.out.println("RECORD ASSESSMENT ");
+
+        Enrollment enrollment = selectEnrollment();
+
+        if (enrollment == null) {
+            return;
+        }
+
+        if (!enrollment.isActive()) {
+            System.out.println("Cannot record an assessment for an inactive enrollment.");
+            return;
+        }
+
+        String id = readText("Enter assessment ID: ");
+
+        for (Assessment assessment : assessments) {
+            if (assessment.getId().equalsIgnoreCase(id)) {
+                System.out.println("This assessment ID already exists.");
+                return;
+            }
+        }
+
+        String type = readText("Enter assessment type: ");
+        double maximumScore = readDouble("Enter maximum score: ");
+        double obtainedScore = readDouble("Enter obtained score: ");
+        LocalDate date = readDate("Enter assessment date (yyyy-MM-dd): ");
+
+        Assessment assessment = new Assessment(
+                id, enrollment, type, maximumScore, obtainedScore, date
+        );
+
+        try {
+            assessment.validate();
+            assessments.add(assessment);
+
+            System.out.println("Assessment recorded successfully!");
+
+        } catch (ValidationException e) {
+            System.out.println("Assessment failed: " + e.getMessage());
+        }
+    }
+
+
+    private static void recordFeePayment() {
+
+        System.out.println("RECORD FEE PAYMENT");
+
+        Student student = selectStudent();
+
+        if (student == null) {
+            return;
+        }
+
+        String id = readText("Enter payment ID: ");
+
+        for (FeePayment payment : payments) {
+            if (payment.getId().equalsIgnoreCase(id)) {
+                System.out.println("This payment ID already exists.");
+                return;
+            }
+        }
+
+        BigDecimal amount;
+
+        while (true) {
+            try {
+                amount = new BigDecimal(readText("Enter payment amount: "));
+                break;
+
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid amount.");
+            }
+        }
+
+        LocalDate date = readDate("Enter payment date (yyyy-MM-dd): ");
+        String method = readText("Enter payment method: ");
+        String receipt = readText("Enter receipt number: ");
+
+        FeePayment payment = new FeePayment(
+                id, student, amount, date, method, receipt
+        );
+
+        try {
+            payment.validate();
+            payments.add(payment);
+
+            System.out.println("Fee payment recorded successfully!");
+
+        } catch (ValidationException e) {
+            System.out.println("Payment failed: " + e.getMessage());
+        }
+    }
+
+
+    public static void demostratePolymorphism(){
+
+        ArrayList<Person>people= new ArrayList<>();
+
+        people.addAll(students);
+        people.addAll(teachers);
+        people.addAll(administrators);
+
+        System.out.println("POLYMORPHISM DEMOSTRATION");
+
+        if(people.isEmpty()){
+            System.out.println("No people have been registered yet");
+            return;
+        }
+
+        for (Person person : people){
+            System.out.println("Role:" + person.getRoleDescription());
+            System.out.println("Name:" + person.getDisplayName());
+            System.out.println("ID:" + person.getId());
+
+            person.printDetails();
+        }
+    }
+
+    public static void demonstrateInterfacePolymorphism() {
+
+        ArrayList<Registrable> records = new ArrayList<>();
+
+        // Add all registered records
+        records.addAll(departments);
+        records.addAll(students);
+        records.addAll(teachers);
+        records.addAll(administrators);
+        records.addAll(courses);
+        records.addAll(classrooms);
+        records.addAll(enrollments);
+        records.addAll(assessments);
+        records.addAll(payments);
+        records.addAll(books);
+        records.addAll(bookLoans);
+
+        System.out.println(" INTERFACE POLYMORPHISM DEMONSTRATION ");
+
+        if (records.isEmpty()) {
+            System.out.println("No records have been registered yet.");
+            return;
+        }
+
+        for (Registrable record : records) {
+
+            System.out.println(record.getRegistrationSummary());
+        }
+    }
+
 }
